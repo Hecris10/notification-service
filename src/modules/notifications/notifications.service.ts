@@ -1,16 +1,14 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { ClientKafka } from '@nestjs/microservices';
+import { Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { db } from '../../database/db';
 import { notifications, NotificationSchema } from '../../database/schema';
+import { KafkaService } from '../kafka/kafka.service';
 
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
-  constructor(
-    @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka,
-  ) {}
+  constructor(private readonly kafkaService: KafkaService) {}
 
   async sendNotification(data: any) {
     try {
@@ -32,17 +30,16 @@ export class NotificationService {
         `Notification created: ID=${id}, External ID=${parsedData.data.externalId}`,
       );
 
-      // ✅ Publish the event to Kafka
-      this.kafkaClient.emit('notification.status.change', {
-        externalId: parsedData.data.externalId,
-        status: 'processing',
-        timestamp: new Date().toISOString(),
-      });
+      // ✅ Publish to Kafka
+      this.kafkaService.publishStatusChange(
+        parsedData.data.externalId,
+        'processing',
+      );
 
       return { id, ...parsedData.data };
-    } catch (error: unknown) {
-      const message = (error as Error).message;
-      this.logger.error(`Failed to send notification: ${message}`);
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to send notification: ${err.message}`);
       throw error;
     }
   }
@@ -65,15 +62,11 @@ export class NotificationService {
         `Status updated: External ID=${externalId}, New Status=${status}`,
       );
 
-      // ✅ Publish the updated status to Kafka
-      this.kafkaClient.emit('notification.status.change', {
-        externalId,
-        status,
-        timestamp: new Date().toISOString(),
-      });
+      // ✅ Publish to Kafka
+      this.kafkaService.publishStatusChange(externalId, status);
 
       return { externalId, status };
-    } catch (error: unknown) {
+    } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to update status: ${err.message}`);
       throw error;
