@@ -105,7 +105,8 @@ services:
     ports:
       - '9092:9092'
     environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     depends_on:
       - zookeeper
@@ -117,7 +118,7 @@ Create a `.env` file in the root directory:
 
 ```env
 DATABASE_URL=file:./notifications.db
-KAFKA_BROKER=localhost:9092
+KAFKA_BROKER=kafka:9092
 ```
 
 ### **🔹 Run Database Migrations**
@@ -194,49 +195,46 @@ Kafka ensures **at-least-once delivery** so **no status updates are lost**.
 
 ---
 
-## **🔎 Handling System Challenges**
+## **🔎 Improving System Resilience & Future Enhancements**
 
-This section addresses the **three key challenges** outlined in the project instructions.
+### **📌 How to Improve Around These Challenges**
 
-### **1️⃣ Handling Downtime & Preventing Lost Events**
+The notification system is expected to **support new channels** with unique status transitions. To ensure **scalability and reliability**, we address key challenges and suggest improvements:
 
-✅ **Kafka ensures message durability**
+### **1️⃣ What if Our Application is Down?**
 
-- Messages are **retained for 7 days** (`retention.ms=604800000`).
-- If the service is **down**, messages remain **queued** and are processed **once the service restarts**.
+**Problem:** If our service is unavailable, webhook status updates may be lost.  
+**Solution:**
 
-### **2️⃣ Ensuring At-Least-Once Delivery**
+- **Use Kafka as a Buffer**: Instead of webhooks calling our API directly, route them to **Kafka first**.
+- **Retry Mechanism:** If Kafka fails, set a **retry policy** using **Kafka’s message retention** (e.g., 7 days).
+- **Ensure Stateless Services:** Deploy our API in a **distributed environment** using **Docker Swarm or Kubernetes** to minimize downtime.
 
-✅ **Kafka guarantees message delivery**
+### **2️⃣ Ensuring Events Are Delivered At Least Once**
 
-- A message is **only removed after acknowledgment**.
-- If processing **fails**, Kafka **retries the event automatically**.
-- Our **Kafka consumer only commits offsets after successful processing**.
+**Problem:** We must guarantee that **every event is processed at least once**.  
+**Solution:**
+
+- **Use Kafka with Consumer Offsets**: Kafka ensures that **messages are only removed once processed successfully**.
+- **Idempotent Processing:** Each event contains a **unique ID**, ensuring duplicate events are ignored.
+- **Monitoring & Alerting:** Use **Prometheus** or **Grafana** to monitor Kafka lag.
 
 ### **3️⃣ Handling Out-of-Order Events**
 
-✅ **We use timestamps to ignore older events**
+**Problem:** External services may **send status updates out of order**.  
+**Solution:**
 
-- If a `delivered` event **arrives before** a `sent` event, we **ignore the outdated update**.
+- **Timestamp Comparison:** Store the **latest timestamp** in the database and **ignore older events**.
+- **Kafka Message Ordering:** Use **Kafka partitions** to ensure messages for a single notification **are always processed in order**.
+- **Event Deduplication:** Implement **a cache** (e.g., Redis) to **ignore duplicate updates**.
 
-**Example Fix in `updateStatus()`**
+### **🔥 Future Enhancements**
 
-```ts
-async updateStatus(externalId: string, status: string, timestamp: string) {
-  const [existing] = await db
-    .select()
-    .from(notifications)
-    .where(eq(notifications.externalId, externalId))
-    .limit(1);
+- **Support More Notification Channels:** Extend the system to **email, push notifications, and more.**
+- **Scalability with Multiple Kafka Consumers:** Deploy multiple consumer instances for **higher throughput**.
+- **Real-Time Monitoring Dashboard:** Use **Kafka UI** to track events visually.
 
-  if (!existing || new Date(timestamp) < new Date(existing.timestamp)) {
-    this.logger.warn(`Ignoring out-of-order event: ${status} for External ID: ${externalId}`);
-    return;
-  }
-
-  await db.update(notifications).set({ status, timestamp }).where(eq(notifications.externalId, externalId));
-}
-```
+✅ **By implementing these strategies, the notification system will be highly resilient, scalable, and future-proof.** 🚀
 
 ---
 
@@ -252,5 +250,3 @@ async updateStatus(externalId: string, status: string, timestamp: string) {
 ## **📜 License**
 
 This project is **MIT licensed**. Feel free to use and modify!
-
----
