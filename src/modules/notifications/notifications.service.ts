@@ -44,7 +44,11 @@ export class NotificationService {
     }
   }
 
-  async updateStatus(externalId: string, status: string) {
+  async updateStatus(
+    externalId: string,
+    status: string,
+    timestamp: string | null,
+  ) {
     try {
       if (!NotificationSchema.shape.status.safeParse(status).success) {
         this.logger.warn(
@@ -55,7 +59,7 @@ export class NotificationService {
 
       await db
         .update(notifications)
-        .set({ status })
+        .set({ status, timestamp })
         .where(eq(notifications.externalId, externalId));
 
       this.logger.log(
@@ -69,6 +73,28 @@ export class NotificationService {
     } catch (error) {
       const err = error as Error;
       this.logger.error(`Failed to update status: ${err.message}`);
+      throw error;
+    }
+  }
+
+  async getNotificationStatus(externalId: string) {
+    try {
+      const notification = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.externalId, externalId))
+        .limit(1)
+        .execute();
+
+      if (!notification.length) {
+        this.logger.warn(`Notification not found: External ID=${externalId}`);
+        throw new Error('Notification not found');
+      }
+
+      return notification[0];
+    } catch (error) {
+      const err = error as Error;
+      this.logger.error(`Failed to get notification status: ${err.message}`);
       throw error;
     }
   }

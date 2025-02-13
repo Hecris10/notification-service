@@ -7,6 +7,7 @@ import { NotificationService } from './notifications.service';
 const WebhookSchema = z.object({
   externalId: z.string(),
   event: z.enum(['processing', 'rejected', 'sent', 'delivered', 'viewed']),
+  timestamp: z.string(),
 });
 
 @Controller('webhooks')
@@ -33,6 +34,7 @@ export class NotificationWebhookController {
       const result = await this.notificationService.updateStatus(
         parsed.data.externalId,
         parsed.data.event,
+        parsed.data.timestamp,
       );
 
       // ✅ Publish event to Kafka
