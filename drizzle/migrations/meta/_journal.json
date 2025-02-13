@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1739420187306,
+      "tag": "0000_special_jetstream",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1739420286520,
+      "tag": "0001_military_tombstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1739428770011,
+      "tag": "0002_bent_thena",
+      "breakpoints": true
+    }
+  ]
+}
