@@ -27,7 +27,7 @@ export class NotificationController {
       );
       return response;
     } catch (error: unknown) {
-      const err = error as { message: string; stack: string };
+      const err = error as Error;
       this.logger.error(
         `Failed to send notification: ${err.message}`,
         err.stack,
@@ -49,7 +49,7 @@ export class NotificationController {
       );
       return response;
     } catch (error: unknown) {
-      const err = error as { message: string; stack: string };
+      const err = error as Error;
       this.logger.error(
         `Failed to retrieve notification status: ${err.message}`,
         err.stack,

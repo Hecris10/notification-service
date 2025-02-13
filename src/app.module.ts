@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { KafkaModule } from './modules/kafka/kafka.module';
 import { NotificationModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(), // Load environment variables
-    NotificationModule, // Import Notification module
+    KafkaModule, // ✅ Import KafkaModule to register KAFKA_SERVICE globally
+    NotificationModule,
   ],
 })
 export class AppModule {}
