@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { NotificationModule } from '../notifications/notifications.module';
 import { KafkaConsumerService } from './kafka.consumer';
 import { KafkaService } from './kafka.service';
 
@@ -11,7 +12,7 @@ import { KafkaService } from './kafka.service';
         transport: Transport.KAFKA,
         options: {
           client: {
-            brokers: ['localhost:9092'], // Replace with actual broker address
+            brokers: ['localhost:9092'], // Update this if Kafka broker is on a different host/port
           },
           consumer: {
             groupId: 'notification-service-group',
@@ -19,8 +20,9 @@ import { KafkaService } from './kafka.service';
         },
       },
     ]),
+    forwardRef(() => NotificationModule),
   ],
   providers: [KafkaService, KafkaConsumerService],
-  exports: [KafkaService],
+  exports: [KafkaService, ClientsModule],
 })
 export class KafkaModule {}

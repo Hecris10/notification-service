@@ -12,24 +12,22 @@ export class KafkaConsumerService implements OnModuleInit {
   private readonly logger = new Logger(KafkaConsumerService.name);
 
   constructor(
-    @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka,
+    @Inject('KAFKA_SERVICE') private readonly kafkaClient: ClientKafka, // ✅ Inject Kafka microservice
     private readonly notificationService: NotificationService,
   ) {}
 
   async onModuleInit() {
-    // ✅ Subscribe to the Kafka topic
     this.kafkaClient.subscribeToResponseOf(KAFKA_TOPICS.STATUS_CHANGE);
-
     await this.kafkaClient.connect();
   }
 
-  async consumeMessages(message: { value: Notification; offset: string }) {
+  async consumeMessages(message: { value: Notification }) {
     try {
       this.logger.log(
         `Processing Kafka Event: ${JSON.stringify(message.value)}`,
       );
 
-      // Process the event with inferred type
+      // Process the event
       await this.notificationService.updateStatus(
         message.value.externalId,
         message.value.status,

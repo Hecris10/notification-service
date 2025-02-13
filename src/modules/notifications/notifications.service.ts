@@ -8,7 +8,7 @@ import { KafkaService } from '../kafka/kafka.service';
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
-  constructor(private readonly kafkaService: KafkaService) {}
+  constructor(private readonly kafkaService: KafkaService) {} // ✅ Inject KafkaService
 
   async sendNotification(data: any) {
     try {
